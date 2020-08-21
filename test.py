@@ -14,9 +14,9 @@ if __name__ == "__main__":
     test_records = []
     running_score = 0
 
-    for i_ep, data in env:
+    for i_ep in range(10):
         score = 0
-        state, labels = data
+        state, labels = env.get_data()
 
         # forward
         outputs = agent(state)
