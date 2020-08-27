@@ -15,7 +15,7 @@ from record import Record, TestRecords
 parser = argparse.ArgumentParser(description='Test agent to detect speed in video')
 parser.add_argument('--output_dir', type=str, default='output')
 parser.add_argument('--model_name', type=str, default='cnn_net_params')
-parser.add_argument("--n_episodes", default=500, type=int)
+parser.add_argument("--n_episodes", default=1000, type=int)
 parser.add_argument("--log_interval", default=10, type=int)
 parser.add_argument("--eval_interval", default=50, type=int)
 parser.add_argument("--device", type=str, default='cpu')
@@ -64,9 +64,9 @@ if __name__ == "__main__":
             state, labels = env.get_data()
             torch_state = Variable(torch.from_numpy(state))
             outputs = agent.predict(torch_state)
-            loss = criterion(outputs, torch_labels)
-            print(f'Step {i_ep}\t evaluation loss: {loss * env.norm_const:.4f}')
-            test_records.add(Record(i_ep, loss * env.norm_const))
+            eval_loss = criterion(outputs * env.norm_const, torch_labels * env.norm_const)
+            print(f'Step {i_ep}\t evaluation loss: {eval_loss:.4f}')
+            test_records.add(Record(i_ep, eval_loss))
 
             if not os.path.exists(args.output_dir):
                 os.makedirs(args.output_dir)
