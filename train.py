@@ -4,6 +4,7 @@ import torch.nn as nn
 from torch.autograd import Variable
 import matplotlib.pyplot as plt
 import os
+import numpy as np
 
 # local imports
 from agent import Agent
@@ -18,14 +19,20 @@ parser.add_argument("--n_episodes", default=500, type=int)
 parser.add_argument("--log_interval", default=10, type=int)
 parser.add_argument("--eval_interval", default=50, type=int)
 parser.add_argument("--device", type=str, default='cpu')
+parser.add_argument("--batch_size", type=int, default=32)
+parser.add_argument("--seed", default=1, type=int, help="Random seed")
 args = parser.parse_args()
 
 
 if __name__ == "__main__":
+    torch.manual_seed(args.seed)
+    np.random.seed(args.seed)
+
     agent = Agent()
     agent.prep_train()
 
     env = Env()
+    env.batch_size = args.batch_size
     env.load_video(video_path='data/train.mp4', data_path='data/train.txt')
     env.prep_train()
     criterion = nn.MSELoss()
@@ -33,15 +40,15 @@ if __name__ == "__main__":
     test_records = TestRecords()
 
     if args.device == 'gpu':
-        fn = lambda x: x.cuda()
+        cast = lambda x: Variable(torch.from_numpy(x)).cuda()
     else:
-        fn = lambda x: x.cpu()
+        cast = lambda x: Variable(torch.from_numpy(x)).cpu()
 
     for i_ep in range(args.n_episodes):
         score = 0
         state, labels = env.get_data()
-        torch_state = fn(Variable(torch.from_numpy(state)))
-        torch_labels = fn(Variable(torch.from_numpy(labels)))
+        torch_state = cast(state)
+        torch_labels = cast(labels)
 
         # forward
         outputs = agent.predict(torch_state)
@@ -58,12 +65,13 @@ if __name__ == "__main__":
             torch_state = Variable(torch.from_numpy(state))
             outputs = agent.predict(torch_state)
             loss = criterion(outputs, torch_labels)
-            print('Step {}\t evalution loss: {:.4f}'.format(i_ep, loss * env.norm_const))
-            test_records.add(Record(i_ep, loss))
+            print(f'Step {i_ep}\t evaluation loss: {loss * env.norm_const:.4f}')
+            test_records.add(Record(i_ep, loss * env.norm_const))
 
             if not os.path.exists(args.output_dir):
                 os.makedirs(args.output_dir)
             agent.save(filename=f'{args.output_dir}/{args.model_name}.pkl')
+            print(f'Saved model to {args.output_dir}/{args.model_name}.pkl')
             agent.prep_train()
             env.prep_train()
 
@@ -75,9 +83,3 @@ if __name__ == "__main__":
     plt.xlabel('Episode')
     plt.ylabel('Moving averaged episode reward')
     plt.savefig(f"{args.output_dir}/train_loss.png")
-
-
-
-        # if test_records.get_mse() * env.norm_const < 3:
-        #     print("Solved! Loss is now {}!".format(test_records.get_mse()))
-        #     break

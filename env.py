@@ -8,13 +8,12 @@ from preprocess import pre_process
 
 class Env(object):
     def __init__(self):
-        self._index = 0
-        self.capacity = int(1e2)
+        self.capacity = int(1e4)
         self._img = []
         self._labs = []
         self.n_imgs = 4
         self.train = False
-        self.p_split = .9
+        self.split_perc = .9
         self.batch_size = 32
 
     def load_video(self, video_path, data_path):
@@ -28,8 +27,6 @@ class Env(object):
             ret, frame = vid.read()
             if not ret or i >= self.capacity: break
             frame = pre_process(frame)
-            #cv2.imshow("image", frame)
-            #cv2.waitKey(1)
             self._img.append(frame)
             i += 1
 
@@ -39,6 +36,8 @@ class Env(object):
         _, h, w = self._img.shape
         self.img_stack = np.zeros((self.batch_size, self.n_imgs, h, w))
         self.lab_stack = np.zeros((self.batch_size, 1))
+        self._indeces = np.arange(self.capacity - self.n_imgs)
+        np.random.shuffle(self._indeces)
 
     def prep_eval(self):
         self.train = False
@@ -46,18 +45,20 @@ class Env(object):
     def prep_train(self):
         self.train = True
 
-    def get_data(self):
-        if self.train:
-            self._index = np.random.random_integers(low=0,
-                                             high=round(self.capacity * self.p_split) - self.n_imgs,
-                                             size=self.batch_size)
-        else:
-            self._index = np.random.random_integers(low=round(self.capacity * self.p_split),
-                                             high=self.capacity - self.n_imgs,
-                                             size=self.batch_size)
+    def get_data(self, show=False):
+        p_split = int(np.floor(self.capacity * self.split_perc) - self.n_imgs)
 
-        for i, idx in enumerate(self._index):
+        if self.train:
+            index_choice = np.random.choice(self._indeces[:p_split], self.batch_size)
+        else:
+            index_choice = np.random.choice(self._indeces[p_split:], self.batch_size)
+
+        for i, idx in enumerate(index_choice):
             self.img_stack[i][0:self.n_imgs] = self._img[idx:idx+self.n_imgs]
             self.lab_stack[i] = self._labs[idx]
+            if show:
+                for j in range(self.n_imgs):
+                    cv2.imshow("image", np.expand_dims(self._img[idx+j], 2))
+                    cv2.waitKey(10)
 
         return self.img_stack, self.lab_stack

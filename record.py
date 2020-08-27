@@ -15,5 +15,5 @@ class TestRecords(object):
         return [r.ep for r in self.buffer], [r.losses.data for r in self.buffer]
 
     def get_mse(self):
-        losses = [r.losses.data for r in self.buffer]
+        losses = [r.losses for r in self.buffer]
         return sum(losses) / len(losses)

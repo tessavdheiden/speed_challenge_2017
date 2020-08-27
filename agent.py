@@ -8,9 +8,6 @@ class Agent(object):
         self.model = MLPNetwork()
         self.optimizer = optim.SGD(self.model.parameters(), lr=0.001, momentum=0.9)
 
-    def load_param(self, path):
-        pass
-
     def predict(self, state):
         return self.model(state)
 
@@ -46,4 +43,4 @@ class Agent(object):
         """
         Instantiate instance from file created by 'save' method
         """
-        return self.model.load_params(torch.load(filename))
+        return self.model.load_state_dict(torch.load(filename))
