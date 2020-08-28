@@ -9,13 +9,13 @@ import numpy as np
 # local imports
 from agent import Agent
 from env import Env
-from record import Record, TestRecords
+from record import Record, EvalRecords
 
 
 parser = argparse.ArgumentParser(description='Test agent to detect speed in video')
 parser.add_argument('--output_dir', type=str, default='output')
 parser.add_argument('--model_name', type=str, default='cnn_net_params')
-parser.add_argument("--n_episodes", default=1000, type=int)
+parser.add_argument("--n_episodes", default=1500, type=int)
 parser.add_argument("--log_interval", default=10, type=int)
 parser.add_argument("--eval_interval", default=50, type=int)
 parser.add_argument("--device", type=str, default='cpu')
@@ -33,11 +33,13 @@ if __name__ == "__main__":
 
     env = Env()
     env.batch_size = args.batch_size
-    env.load_video(video_path='data/train.mp4', data_path='data/train.txt')
+    env.load_labels(data_path='data/train.txt')
+    env.load_video(video_path='data/train.mp4')
+    env.shuffle_data()
     env.prep_train()
     criterion = nn.MSELoss()
 
-    test_records = TestRecords()
+    eval_records = EvalRecords()
 
     if args.device == 'gpu':
         cast = lambda x: Variable(torch.from_numpy(x)).cuda()
@@ -66,7 +68,7 @@ if __name__ == "__main__":
             outputs = agent.predict(torch_state)
             eval_loss = criterion(outputs * env.norm_const, torch_labels * env.norm_const)
             print(f'Step {i_ep}\t evaluation loss: {eval_loss:.4f}')
-            test_records.add(Record(i_ep, eval_loss))
+            eval_records.add(Record(i_ep, eval_loss))
 
             if not os.path.exists(args.output_dir):
                 os.makedirs(args.output_dir)
@@ -77,9 +79,9 @@ if __name__ == "__main__":
 
     if not os.path.exists(args.output_dir):
         os.makedirs(args.output_dir)
-    eps, losses = test_records.get_losses()
+    eps, losses = eval_records.get_losses()
     plt.plot(eps, losses)
-    plt.title('Loss')
+    plt.title('Evaluation Loss')
     plt.xlabel('Episode')
-    plt.ylabel('Moving averaged episode reward')
+    plt.ylabel('MSE pred and label')
     plt.savefig(f"{args.output_dir}/train_loss.png")

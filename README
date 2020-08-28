@@ -1,12 +1,19 @@
-Welcome to the comma.ai 2017 Programming Challenge!
+# Predicting speed in video
 
-Basically, your goal is to predict the speed of a car from a video.
+The goal is to predict the speed of a car from a video. The network consists of a CNN that uses a stack of 4 images.
 
-data/train.mp4 is a video of driving containing 20400 frames. Video is shot at 20 fps.
-data/train.txt contains the speed of the car at each frame, one speed on each line.
+## How to run
+All training code is contained within `train.py`. Simply run:
 
-data/test.mp4 is a different driving video containing 10798 frames. Video is shot at 20 fps.
-Your deliverable is test.txt
+```
+python main.py
+```
 
-We will evaluate your test.txt using mean squared error. <10 is good. <5 is better. <3 is heart.
+To evaluate a trained network, the network parameters have to be save in the output folder.
+Then, run:
 
+```
+python eval.py --model_name my_model
+```
+
+It loads a model in output folder and uses a portion of the data in train.mp4.

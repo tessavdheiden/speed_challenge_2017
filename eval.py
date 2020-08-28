@@ -8,7 +8,7 @@ import numpy as np
 # local imports
 from agent import Agent
 from env import Env
-from record import Record, TestRecords
+from record import Record, EvalRecords
 
 
 parser = argparse.ArgumentParser(description='Test agent to detect speed in video')
@@ -29,26 +29,28 @@ if __name__ == "__main__":
     agent.prep_eval()
 
     env = Env()
-    env.capacity = 10798
-    env.load_video(video_path='data/test.mp4')
-    env.prep_train()    # we don't want to split
+    env.capacity = int(1e2)
+    env.batch_size = args.batch_size
+    env.load_labels(data_path='data/train.txt')
+    env.load_video(video_path='data/train.mp4')
+    env.shuffle_data()
+    env.prep_eval()
     criterion = nn.MSELoss()
 
-    test_records = TestRecords()
+    test_records = EvalRecords()
 
-    for i in range(env.capacity - env.n_imgs):
-        state = env.get_img(i)
-        torch_state = Variable(torch.from_numpy(state)).view((1, )+state.shape)
+    for i_ep in range(1000):
+        state, labels = env.get_data()
+        torch_state = Variable(torch.from_numpy(state))
+        torch_labels = Variable(torch.from_numpy(labels))
+
         # forward
         outputs = agent.predict(torch_state)
+        loss = criterion(outputs, torch_labels)
 
         pred = outputs.detach().numpy()[0][0] * env.norm_const
-        print(f'Step {i} \t Prediction: {pred:.2f}')
-        test_records.add(pred)
+        lab = torch_labels.detach().numpy()[0][0] * env.norm_const
+        test_records.add(Record(i_ep, abs(pred-lab)))
+        print(f'Step {i_ep} \t Prediction: {pred:.2f} \t Label: {lab:.2f}  Test Loss: {abs(pred-lab):.2f}')
 
-    pred = test_records.get_pred()
-    first_elem = pred[0]
-    for _ in range(4):
-        pred = np.insert(pred, 0, first_elem, axis=0)
-    print(pred.shape[0])
-    np.savetxt('data/test.txt', pred, fmt='%1.6f')
+    print(f'Final MSE: {test_records.get_mse()}')

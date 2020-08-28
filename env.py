@@ -15,12 +15,14 @@ class Env(object):
         self.train = False
         self.split_perc = .9
         self.batch_size = 32
+        self.norm_const = 10
 
-    def load_video(self, video_path, data_path):
+    def load_labels(self, data_path):
         self._labs = np.loadtxt(data_path)
-        self.norm_const = 10 #np.linalg.norm(self._labs)
+        #self.norm_const np.linalg.norm(self._labs)
         self._labs = self._labs / self.norm_const
 
+    def load_video(self, video_path):
         vid = cv2.VideoCapture(video_path)
         i = 0
         while vid.isOpened():
@@ -37,6 +39,8 @@ class Env(object):
         self.img_stack = np.zeros((self.batch_size, self.n_imgs, h, w))
         self.lab_stack = np.zeros((self.batch_size, 1))
         self._indeces = np.arange(self.capacity - self.n_imgs)
+
+    def shuffle_data(self):
         np.random.shuffle(self._indeces)
 
     def prep_eval(self):
@@ -62,3 +66,6 @@ class Env(object):
                     cv2.waitKey(10)
 
         return self.img_stack, self.lab_stack
+
+    def get_img(self, i):
+        return self._img[i:i+self.n_imgs]

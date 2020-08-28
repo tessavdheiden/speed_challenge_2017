@@ -1,3 +1,5 @@
 torch
 opencv-python==4.2.0.34
 numpy>=1.13.3
+argparse
+matplotlib
