@@ -4,8 +4,8 @@ import torch.optim as optim
 
 
 class Agent(object):
-    def __init__(self):
-        self.model = MLPNetwork()
+    def __init__(self, n_imgs):
+        self.model = MLPNetwork(n_imgs=n_imgs)
         self.optimizer = optim.SGD(self.model.parameters(), lr=0.001, momentum=0.9)
 
     def predict(self, state):

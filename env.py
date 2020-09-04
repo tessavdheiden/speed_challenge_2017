@@ -3,15 +3,15 @@ import numpy as np
 
 
 # local imports
-from preprocess import pre_process
+from preprocess import pre_process, down_scale
 
 
 class Env(object):
-    def __init__(self):
-        self.capacity = int(1e4)
+    def __init__(self, n_imgs):
+        self.capacity = int(3e4)
         self._img = []
         self._labs = []
-        self.n_imgs = 4
+        self.n_imgs = n_imgs
         self.train = False
         self.split_perc = .9
         self.batch_size = 32
@@ -28,14 +28,14 @@ class Env(object):
         while vid.isOpened():
             ret, frame = vid.read()
             if not ret or i >= self.capacity: break
-            frame = pre_process(frame)
+            frame = down_scale(frame)
             self._img.append(frame)
             i += 1
 
         self._img = np.array(self._img)
         self.capacity = self._img.shape[0]
-        self._labs = self._labs[self.n_imgs:self.capacity + self.n_imgs]    # neglect the first n_imgs
-        _, h, w = self._img.shape
+        self._labs = self._labs[self.n_imgs:]    # neglect the first n_imgs
+        _, h, w, c = self._img.shape
         self.img_stack = np.zeros((self.batch_size, self.n_imgs, h, w))
         self.lab_stack = np.zeros((self.batch_size, 1))
         self._indeces = np.arange(self.capacity - self.n_imgs)
@@ -58,7 +58,7 @@ class Env(object):
             index_choice = np.random.choice(self._indeces[p_split:], self.batch_size)
 
         for i, idx in enumerate(index_choice):
-            self.img_stack[i][0:self.n_imgs] = self._img[idx:idx+self.n_imgs]
+            self.img_stack[i][0:self.n_imgs] = np.array([pre_process(img) for img in self._img[idx:idx+self.n_imgs]])
             self.lab_stack[i] = self._labs[idx]
             if show:
                 for j in range(self.n_imgs):
@@ -68,4 +68,4 @@ class Env(object):
         return self.img_stack, self.lab_stack
 
     def get_img(self, i):
-        return self._img[i:i+self.n_imgs]
+        return np.array([pre_process(img) for img in self._img[i:i+self.n_imgs]])

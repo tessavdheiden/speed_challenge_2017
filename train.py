@@ -15,11 +15,12 @@ from record import Record, EvalRecords
 parser = argparse.ArgumentParser(description='Test agent to detect speed in video')
 parser.add_argument('--output_dir', type=str, default='output')
 parser.add_argument('--model_name', type=str, default='cnn_net_params')
-parser.add_argument("--n_episodes", default=1500, type=int)
+parser.add_argument("--n_episodes", default=3000, type=int)
 parser.add_argument("--log_interval", default=10, type=int)
 parser.add_argument("--eval_interval", default=50, type=int)
 parser.add_argument("--device", type=str, default='cpu')
 parser.add_argument("--batch_size", type=int, default=32)
+parser.add_argument("--n_imgs", type=int, default=16)
 parser.add_argument("--seed", default=1, type=int, help="Random seed")
 args = parser.parse_args()
 
@@ -28,10 +29,10 @@ if __name__ == "__main__":
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
 
-    agent = Agent()
+    agent = Agent(args.n_imgs)
     agent.prep_train()
 
-    env = Env()
+    env = Env(n_imgs=args.n_imgs)
     env.batch_size = args.batch_size
     env.load_labels(data_path='data/train.txt')
     env.load_video(video_path='data/train.mp4')

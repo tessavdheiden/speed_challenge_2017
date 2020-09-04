@@ -16,6 +16,7 @@ parser.add_argument('--output_dir', type=str, default='output')
 parser.add_argument('--model_name', type=str, default='cnn_net_params')
 parser.add_argument("--device", type=str, default='cpu')
 parser.add_argument("--batch_size", type=int, default=1)
+parser.add_argument("--n_imgs", type=int, default=16)
 parser.add_argument("--seed", default=1, type=int, help="Random seed")
 args = parser.parse_args()
 
@@ -24,11 +25,11 @@ if __name__ == "__main__":
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
 
-    agent = Agent()
+    agent = Agent(args.n_imgs)
     agent.init_from_save(filename=f'{args.output_dir}/{args.model_name}.pkl')
     agent.prep_eval()
 
-    env = Env()
+    env = Env(args.n_imgs)
     env.capacity = 10798
     env.load_video(video_path='data/test.mp4')
     env.prep_train()    # we don't want to split
@@ -48,7 +49,7 @@ if __name__ == "__main__":
 
     pred = test_records.get_pred()
     first_elem = pred[0]
-    for _ in range(4):
+    for _ in range(args.n_imgs):
         pred = np.insert(pred, 0, first_elem, axis=0)
     print(pred.shape[0])
     np.savetxt('data/test.txt', pred, fmt='%1.6f')
